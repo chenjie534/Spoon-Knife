@@ -204,6 +204,45 @@ def account_setting():
     ]
     return  render_template('account_setting.html', data=data)
 
+@app.route('/account_add_account', methods=['POST'])
+def account_add_account():
+    new_account_data = request.get_json()  # 获取前端传来的JSON格式数据
+    username = new_account_data.get('username')
+    permission_level = new_account_data.get('permission_level')
+    # 检查账户名是否已存在
+    # if existing_account:
+    #     return {'success': False, 'message': 'Account name already exists'}, 400
+    # 创建新账户对象并插入数据库，该账户的用户名为username、权限等级为permission_level、密码为123456
+
+    return {'success': True, 'message': 'Account added successfully'}, 200
+
+@app.route('/account_reset_password', methods=['POST'])
+def account_reset_password():
+    account_data = request.get_json()
+    username = account_data.get('username')
+    # 这里添加具体的密码重置逻辑，可以将该账户的密码统一重置为123456
+
+    # return {'success': False, 'message': 'Account not found'}, 404
+    return {'success': True,'message': 'Password reset successfully'}, 200
+
+@app.route('/account_update_name', methods=['POST'])
+def account_update_name():
+    update_data = request.get_json()
+    old_username = update_data.get('old_username')
+    new_username = update_data.get('new_username')
+    # 这里添加具体的更新用户名逻辑
+
+    # return {'success': False, 'message': 'Account not found'}, 404
+    return {'success': True, 'message': 'Account name updated successfully'}, 200
+
+@app.route('/account_delete', methods=['POST'])
+def account_delete():
+    account_data = request.get_json()
+    username = account_data.get('username')
+    #这里添加具体的删除账户名为username的用户的逻辑
+
+    # return {'success': False,'message': 'Account not found'}, 404
+    return {'success': True, 'message': 'Account deleted successfully'}, 200
 
 @app.route('/healthiness_prediction/<path:meter>', methods=['GET', 'POST'])
 def healthiness_prediction(meter):
