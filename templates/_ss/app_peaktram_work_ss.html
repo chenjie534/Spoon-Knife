@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="/staticFiles/main.css" />
+    <title>Condition Monitoring System for Peak Tram</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+
+
+<body>
+
+    <div id="chart0">
+        <div>
+            <img src="\static\photos\peak-tram_cover.jpg" width="2000" height="594" alt=""/>
+        </div>
+    </div>
+
+    <h1>Condition Monitoring System for Peak Tram</h1>
+
+
+	
+    <h2>Inspection by Computer Vision </h2>
+	
+	<p>&nbsp;</p>
+	<p>&nbsp;</p>
+	
+<!--
+    <p> <span style="font-size: 2rem"> Length of Inspection:</span> <span style="font-size: 2rem;background-color: green;color:white" id="counter">000</span></p>
+    <p> <span style="font-size: 1.8rem"> Number of Failure Points: </span> <span style="font-size: 2rem;background-color: green;color:white">{{ cv_inspection.failures }} </span></p>
+-->
+
+    
+    <canvas id="myCanvas"></canvas>
+    <script>
+       // 初始化计数器
+        let count = 1352;
+
+        // 更新计数器并显示在页面上
+        function updateCounter() {
+            count = count + 13;
+            if (count > 9999) {
+                count = 1000; // 重置计数器
+            }
+            document.getElementById("counter").textContent = count.toString().padStart(3, "0");
+        }
+
+        // 每秒钟更新一次计数器
+        setInterval(updateCounter, 1000);
+    </script>
+
+<!--
+	
+    {% for image in cv_inspection.images %}
+        <img width="500" height="250" src="{{ image }}" alt="Failure Image">
+    {% endfor %}
+	
+-->		
+
+    <h1>&nbsp;</h1>
+	<h1>&nbsp;</h1>
+	
+	
+    <h1>Magnetic Sensor Inspection</h1>
+	<h2>Chart</h2>
+
+    
+
+
+     <!-- Data Visualization in Plotly -->
+
+     <div id="chart1"></div>
+     <script>
+         var fig_plot = {{ plot | safe }};
+         Plotly.newPlot('chart1', fig_plot); 
+     </script>
+
+
+    <!-- Kmeans in Plotly -->
+
+    <div id="chart2"></div>
+    <script>
+        var fig_kmeans = {{ plot_kmeans | safe }};
+        Plotly.newPlot('chart2', fig_kmeans);
+    </script>
+
+
+
+
+    <div id="counter">000</div>
+    
+
+
+</body>
+</html>
+

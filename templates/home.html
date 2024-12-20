@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Home Page</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="menu-toggle" onclick="toggleSidebar()">
+<!--        <img src="/static/Photos/menu_icon.jpg" alt="Menu Icon" style="width: 30px; height: 30px;">-->
+    </div>
+    <div class="sidebar">
+        <a href="/" ><img src="/static/Photos/log_out_icon.jpg" alt="Log Out Icon"></a>
+        <a href="/problems"><img src="/static/Photos/rope_issue_icon.jpg" alt="Rope Issue Icon"> Rope Issue</a>
+        <a href="#" id="trendAnalysisLink"><img src="/static/Photos/healthiness_prediction_icon.jpg" alt="Trend Analysis Icon">Trend Analysis</a>
+        <a href="#" id="reportIcon"><img src="/static/Photos/pdf_icon.jpg" alt="Report Icon">Generate Report</a>
+        <a href="/rope_details"><img src="/static/Photos/rope_details_icon.jpg" alt="Rope Details Icon">Rope Details</a>
+        <a href="/account_setting"><img src="/static/Photos/account_setting_icon.jpg" alt="Account Setting Icon">Account Setting</a>
+    </div>
+    <div class="content">
+        <h1>Condition Monitoring System for Peak Tram</h1>
+        <div >
+            <img src="/static/photos/cover.jpg" style="width: 100%; height: auto; " alt=""/>
+            <div id="dateTime"></div>
+            <div id="data-display"><span>实时速度为：</span>加载中...</div>
+        </div>
+
+        <div id="scatterPlotMagnetic" style="max-width: 93%; height: auto; "></div>
+        <div id="scatterPlotToday" style="max-width: 93%; height: auto; "></div>
+        <div id="scatterPlotForecast" style="max-width: 93%; height: auto; "></div>
+    </div>
+    <!-- 模态框（Modal） -->
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p>Please enter the rope position you want to view(0-400):</p>
+            <form id="meterForm" method="POST">
+                <input type="number" id="meterInput" name="meter" min="0" max="400"  placeholder="meter" required>
+                <button type="submit">Enter</button>
+            </form>
+        </div>
+    </div>
+    <!-- 添加模态框 -->
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Generate Report</h2>
+            <form id="reportForm" method="POST" action="/generate_report">
+                <label for="reportType" id="TypleLable">Title: </label>
+                <select id="reportType" name="reportType" required>
+                    <option value="Rope Issue" selected>Rope Issue</option>
+                    <option value="Trend Analysis">Trend Analysis</option>
+                </select>
+                <div id="reportOptions">
+                    <!-- 报告选项将在这里动态添加 -->
+                </div>
+                <div class="modal-button-container">
+                    <button type="submit">Generate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <h1>                       RTSP Stream</h1>
+        <div id="video-container">
+            <img src="/video_feed" width="640" height="480" alt="YOLO Stream">
+        </div>
+
+    <script>
+        function fetchData() {
+            fetch('/get_latest_data')
+                .then(response => response.json())
+                .then(data => {
+                    const display = document.getElementById('data-display');
+                    if (data.speed !== undefined && data.position !== undefined) {
+                        display.innerText = `Speed: ${data.speed}, Position: ${data.position}`;
+                    } else if (data.error) {
+                        display.innerText = data.error;
+                    } else {
+                        display.innerText = 'No data available';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    document.getElementById('data-display').innerText = 'Error fetching data';
+                });
+        }
+
+        // 页面加载时立即请求一次数据
+        window.onload = fetchData;
+
+        // 每秒钟请求一次数据
+        setInterval(fetchData, 1000);
+
+        // Display the current date and time in Hong Kong
+        var now = new Date();
+        var options = { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', timeZone: 'Asia/Hong_Kong' };
+        document.getElementById('dateTime').innerHTML = new Intl.DateTimeFormat('en-US', options).format(now);
+
+        //plot magnetic
+        var magnetic_value={{magnetic_value|tojson}};
+        var trace1={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_1']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 1'
+        };
+        var trace2={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_2']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 2'
+        };
+        var trace3={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_3']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 3'
+        };
+        var trace4={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_4']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 4'
+        };
+        var trace5={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_5']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 5'
+        };
+        var trace6={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_6']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 6'
+        };
+        var traces=[trace1,trace2,trace3,trace4,trace5,trace6];
+        var layoutM = {
+            xaxis: { title: 'Meter', range: [1, 400] },
+            yaxis: { title: 'Magnetic Value', range: [2000, 2700]},
+        };
+
+        //plot today
+        var today_data={{today_data|tojson}};
+        var traceT = {
+            x: today_data.map(row => row['meter']),
+            y: today_data.map(row => row['Probability']),
+            mode: 'markers',
+            type: 'scatter'
+        };
+
+        //plot Forecast
+        var data = {{ data|tojson }};
+        var traceF = {
+            x: data.map(row => row['meter']),
+            y: data.map(row => row['Probability']),
+            mode: 'markers',
+            type: 'scatter'
+        };
+         var layoutT = {
+            xaxis: { title: 'Meter', range: [1, 400] },
+            yaxis: { title: 'Loss of Metaliic Area(LMA)<br>Today', tickvals: [0, 0.02, 0.04, 0.06, 0.08, 0.1], ticktext: ['0%', '2%', '4%', '6%', '8%', '10%'], range: [0, 0.1]},
+            shapes: [{
+                type: 'line',
+                y0: 0.04,
+                y1: 0.04,
+                xref: 'paper',
+                x0: 0,
+                x1: 1,
+                line: {color: 'red'}
+            }]
+        };
+        var layoutF = {
+             xaxis: { title: 'Meter', range: [1, 400] },
+             yaxis: { title: 'Loss of Metaliic Area(LMA)<br>Forecast', tickvals: [0, 0.02, 0.04, 0.06, 0.08, 0.1], ticktext: ['0%', '2%', '4%', '6%', '8%', '10%'], range: [0, 0.1] },
+             shapes: [{
+                 type: 'line',
+                 y0: 0.04,
+                 y1: 0.04,
+                 xref: 'paper',
+                 x0: 0,
+                 x1: 1,
+                 line: {color: 'red'}
+             }]
+        };
+
+        var config = { responsive: true, displayModeBar: false }
+        Plotly.newPlot('scatterPlotMagnetic', traces, layoutM, config);
+        Plotly.newPlot('scatterPlotToday', [traceT], layoutT, config);
+        Plotly.newPlot('scatterPlotForecast', [traceF], layoutF, config);
+
+
+        // 获取打开模态框的链接元素-->Trend Analysis
+        var link = document.getElementById("trendAnalysisLink");
+        // 添加点击事件监听器
+        link.addEventListener("click", function(event) {
+            event.preventDefault(); // 阻止链接的默认行为
+            // 创建一个表单元素
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/home';
+            // 创建一个隐藏输入元素，用于传递米数
+            var hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'meter';
+            hiddenInput.value = '-1';
+            // 将隐藏输入元素添加到表单中
+            form.appendChild(hiddenInput);
+            document.body.appendChild(form);
+            form.submit();
+        });
+
+
+        // 获取打开模态框的链接元素-->Report Generation
+        var reportIcon = document.getElementById("reportIcon");
+        // 添加点击事件监听器
+        reportIcon.addEventListener("click", function(event) {
+            event.preventDefault(); // 阻止链接的默认行为
+            var reportModal = document.getElementById("reportModal");
+            reportModal.style.display = "block"; // 显示模态框
+        });
+        // 获取关闭模态框的元素
+        var reportSpan = document.getElementById("reportModal").getElementsByClassName("close")[0];
+        // 添加关闭事件监听器
+        reportSpan.addEventListener("click", function() {
+            var reportModal = document.getElementById("reportModal");
+            reportModal.style.display = "none"; // 隐藏模态框
+        });
+        // 获取模态框中的按钮
+        var reportButtons = document.querySelectorAll("#reportForm button");
+        // 为每个按钮添加点击事件监听器
+        reportButtons.forEach(function(button) {
+            button.addEventListener("click", function(event) {
+                event.preventDefault();
+                var reportType = document.getElementById("reportType").value; // 获取选择的报告类型
+                // 隐藏模态框
+                var reportModal = document.getElementById("reportModal");
+                reportModal.style.display = "none";
+                // 提交表单
+                document.getElementById("reportForm").submit();
+            });
+        });
+        // 修改表单的action属性为/generate_report
+        document.getElementById("reportForm").action = "/generate_report";
+        document.addEventListener("DOMContentLoaded", function() {
+            // 初始化报告选项
+            initializeReportOptions();
+        });
+        function initializeReportOptions() {
+            var reportOptions = document.getElementById("reportOptions");
+            // 创建并添加日期前的文字
+            var dateLabel = document.createElement("label");
+            dateLabel.htmlFor = "date"; // 设置label的for属性，使其与输入框关联
+            dateLabel.textContent = "Date: ";
+            reportOptions.appendChild(dateLabel);
+            // 添加日期选择选项
+            var dateInput = document.createElement("input");
+            dateInput.type = "date";
+            dateInput.name = "date";
+            dateInput.id = "date";
+            dateInput.required = true;
+            reportOptions.appendChild(dateInput);
+        }
+        // 添加事件监听器来处理报告类型选择
+        document.getElementById("reportType").addEventListener("change", function() {
+            var reportType = this.value;
+            var reportOptions = document.getElementById("reportOptions");
+            reportOptions.innerHTML = ""; // 清空之前的选项
+            if (reportType === "Rope Issue") {
+                // 创建并添加日期前的文字
+                var dateLabel = document.createElement("label");
+                dateLabel.htmlFor = "date"; // 设置label的for属性，使其与输入框关联
+                dateLabel.textContent = "Date: ";
+                reportOptions.appendChild(dateLabel);
+                // 添加日期选择选项
+                var dateInput = document.createElement("input");
+                dateInput.type = "date";
+                dateInput.name = "date";
+                dateInput.required = true;
+                reportOptions.appendChild(dateInput);
+            } else if (reportType === "Trend Analysis") {
+                // 创建并添加日期前的文字
+                var dateLabel = document.createElement("label");
+                dateLabel.htmlFor = "date"; // 设置label的for属性，使其与输入框关联
+                dateLabel.textContent = "Date: ";
+                reportOptions.appendChild(dateLabel);
+                // 添加预测日期选择选项
+                var predictionOptions = document.createElement("select");
+                predictionOptions.name = "prediction";
+                var options = ["One Day Trend", "Three Days Trend", "Five Days Trend"];
+                options.forEach(function(option) {
+                    var opt = document.createElement("option");
+                    opt.value = option;
+                    opt.textContent = option;
+                    predictionOptions.appendChild(opt);
+                });
+                reportOptions.appendChild(predictionOptions);
+            }
+        });
+
+        //通过点击点跳转到healthiness_predicted.html
+        scatterPlotToday.on('plotly_click', function(event) {
+            var point = event.points[0];
+            var meter = point.x;
+            // 创建一个表单元素
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/home';
+            // 创建一个隐藏输入元素，用于传递米数
+            var hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'meter';
+            hiddenInput.value = meter;
+            // 将隐藏输入元素添加到表单中
+            form.appendChild(hiddenInput);
+            document.body.appendChild(form);
+            form.submit();
+        });
+
+
+
+<!--        // 设置定时器，每秒检查是否有新数据到达-->
+<!--        setInterval(function() {-->
+<!--            checkForNewData();-->
+<!--        }, 1000);-->
+
+<!--        function checkForNewData() {-->
+<!--            var newData = getNewData();-->
+<!--            if (newData) {-->
+<!--                var ropePosition = newData.position; // 假设新数据包含一个名为'position'的属性-->
+<!--                document.getElementById('positionValue').textContent = ropePosition + ' meters';-->
+<!--            }-->
+<!--        }-->
+    </script>
+
+<!--<video width="640" height="360" controls>-->
+<!--        <source src="your-video-file.mp4" type="video/mp4">-->
+<!--        Your browser does not support the video tag.-->
+<!--</video>-->
+
+</body>
+
+</html>
+    <style>
+        /* 样式化侧边栏 */
+        .sidebar {
+            width: 85px; /* 调整侧边栏宽度 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            background-color: white;
+            overflow-x: hidden;
+            padding-top: 60px;
+        }
+        /* 菜单切换按钮样式 */
+        .menu-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001; /* 确保菜单切换按钮在其他内容之上 */
+            cursor: pointer;
+        }
+        /* 样式化侧边栏链接 */
+        .sidebar a {
+            display: block;
+            color: black;
+            text-align: center;
+            padding: 16px;
+            text-decoration: none;
+        }
+        .sidebar img {
+            width: 40px; /* 小图标的大小 */
+            height: auto;
+        }
+
+
+        /* 样式化主内容区 */
+        .content {
+            margin-left: 85px; /* 确保主内容区与侧边栏之间没有重叠 */
+            padding: 20px;
+            width: calc(100% - 85px); /* 设置内容区域宽度，减去侧边栏宽度 */
+            box-sizing: border-box; /* 确保padding和border包含在宽度计算内 */
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0; /* 移除默认的body边距 */
+            padding: 0; /* 移除默认的body填充 */
+        }
+
+
+        /* 模态框样式 */
+        .modal {
+            display: none; /* 默认不显示 */
+            position: fixed;
+            z-index: 1; /* 确保模态框在页面顶部 */
+            left: 0;
+            top: 0;
+            width: 100%; /* 模态框宽度占满整个屏幕 */
+            height: 100%; /* 模态框高度占满整个屏幕 */
+            overflow: auto; /* 允许模态框内容溢出 */
+            background-color: rgba(0,0,0,0.4); /* 模态框背景颜色，半透明 */
+            padding-top: 60px; /* 模态框内容顶部偏移 */
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto; /* 模态框内容距离顶部和底部5% */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 30%; /* 模态框内容宽度 */
+            min-width: 300px; /* 模态框最小宽度 */
+            max-width: 600px; /* 模态框最大宽度 */
+        }
+
+        /* 调整date与模态框左侧的距离 */
+        #reportOptions {
+            margin-top: 10px;
+            margin-left: 85px; /* 调整距离左侧的距离 */
+        }
+        /* 调整报告类型下拉框与模态框左侧的距离 */
+        #reportType {
+            margin-left: 5px; /* 调整距离左侧的距离 */
+        }
+        /* 调整报告类型标签与模态框左侧的距离 */
+        #TypleLable {
+            margin-left: 85px;
+        }
+
+        .modal-button-container {
+            display: flex;
+            justify-content: flex-end; /* 按钮在右下角 */
+            align-items: flex-end; /* 按钮在右下角 */
+            margin-top: auto; /* 按钮位于模态框底部 */
+            margin-bottom: 0; /* 确保按钮位于模态框底部 */
+        }
+        .modal-button-container button {
+            margin-right: 10px; /* 按钮之间的间距 */
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #video-container {
+            display: flex;
+            justify-content: center;  /* Horizontally centers the content */
+            align-items: center;      /* Vertically centers the content */
+            flex-direction: column;   /* Stacks content vertically */
+            text-align: center;       /* Ensures text is centered */
+            height: 500px;            /* Adjust the height to properly center the content */
+          }
+
+
+        h1 {
+                text-align: center;
+            }
+        h2 {
+                padding-left: 65px;
+            }
+    </style>

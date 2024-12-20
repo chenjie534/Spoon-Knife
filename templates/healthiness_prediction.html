@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Healthiness prediction</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="menu-toggle" onclick="toggleSidebar()">
+<!--        <img src="/static/Photos/menu_icon.jpg" alt="Menu Icon" style="width: 30px; height: 30px;">-->
+    </div>
+    <div class="sidebar">
+        <a href="/home"><img src="/static/Photos/rope_issue_icon.jpg" alt="Real Time Monitoring Icon">Real Time Monitoring</a>
+        <a href="/problems"><img src="/static/Photos/healthiness_prediction_icon.jpg" alt="Rope Issue Icon">Rope Issue</a>
+    </div>
+    <div class="content">
+        <h1>Condition Monitoring System for Peak Tram</h1>
+        <div id="chart0">
+            <div>
+                <img src="\static\photos\cover.jpg" style="width: 100%; height: auto; " alt=""/>
+            </div>
+        </div>
+        <div id="dateTime"></div>
+        <div id="location" style="margin-bottom: 20px;"></div>
+        <div class="row">
+            <div>
+                <div id="Identification">Identification of Rope Issues :</div>
+                <form id="meterForm" method="POST">
+                    <select name="selected_meter" id="meterSelect" style="width:25%;">
+                        <option value="{{ meter }}" selected="selected">{{ meter }} - </option>
+                        {% for issue in issues %}
+                            {% set defect_category = defects|selectattr('meter', 'equalto', issue['meter'])|list|first %}
+                            {% if defect_category %}
+                                {% if issue['meter'] == session.get('selected_meter') %}
+                                    <option value="{{ issue['meter'] }}" selected="selected">{{ issue['meter'] }} - {{ defect_category['possible defect'] }}</option>
+                                {% else %}
+                                    <option value="{{ issue['meter'] }}">{{ issue['meter'] }} - {{ defect_category['possible defect'] }}</option>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+        <form id="meterFormBlank" method="POST" action="/home">
+            <input type="number" id="meterInput" name="meter" min="0" max="400"  placeholder="meter" required>
+            <button type="submit">Enter</button>
+        </form>
+        <div id="scatterPlotMagnetic" style="max-width: 93%; height: auto; "></div>
+        <div id="slider-container">
+            <div class="slider-info">
+                <span id="slider-value">1 </span>
+                <span>day trend</span>
+            </div>
+            <input type="range" id="day-slider" min="1" max="4" value="1" step="1">
+            <div class="slider-scale">
+                {% for i in range(1, 5) %}
+                <div>{{ i }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        <div id="scatterPlot" style="max-width: 93%; height: auto; "></div>
+    </div>
+
+    <script>
+
+        // Display the current date and time in Hong Kong
+        var now = new Date();
+        var options = { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', timeZone: 'Asia/Hong_Kong' };
+        document.getElementById('dateTime').innerHTML = new Intl.DateTimeFormat('en-US', options).format(now);
+        // Display Location of Rope
+        var ropeMeter={{meter}}
+        document.getElementById('location').innerHTML = 'Location of Rope :    ' + ropeMeter+'m';
+         // 用于存储当前页面正在显示的meter值
+        let currentMeterValue=ropeMeter;
+
+        //Display Magnetic Value
+        var magnetic_value ={{magnetic_value|tojson}}
+        var trace1={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_1']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 1'
+        };
+        var trace2={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_2']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 2'
+        };
+        var trace3={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_3']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 3'
+        };
+        var trace4={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_4']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 4'
+        };
+        var trace5={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_5']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 5'
+        };
+        var trace6={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_6']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 6'
+        };
+        var traces=[trace1,trace2,trace3,trace4,trace5,trace6];
+        var layoutM = {
+            title: 'Magnetic Value',
+            xaxis: { title: 'Meter', range: [ropeMeter-0.5,ropeMeter+0.5], dtick: 0.1,fixedrange: true },
+            yaxis: { title: 'Magnetic Value', range: [2200, 2700]},
+
+        };
+
+        //Display Health Score
+        var data_hp = {{ data_hp |tojson}};
+        function convertDateFormat(dateStr) {
+             var parts = dateStr.split('/');
+            // 确保月份和日期是两位数
+            var day = ('0' + parts[0]).slice(-2);
+            var month = ('0' + parts[1]).slice(-2);
+            var year = parts[2];
+            return year + '-' + month + '-' + day;
+        }
+
+        // 转换数据中的日期
+        var plotlyData = data_hp.map(function(item) {
+            return {
+                x: convertDateFormat(item.date),
+                y: item.Probability*100
+            };
+        });
+
+        var traceH = {
+            x: plotlyData.map(function(d) { return d.x; }),
+            y: plotlyData.map(function(d) { return d.y; }),
+            mode: 'markers',
+            type: 'scatter'
+        };
+
+        var layoutH = {
+<!--            title: 'Healthiness prediction for Meter ' + {{ meter }},-->
+            xaxis: { title: 'Date' ,type: 'time',tickformat: '%d %b %y (%a)',fixedrange: true,ticktext: [],tickvals: []},
+            yaxis: { title: 'Loss of Metaliic Area(LMA)', tickvals: [0, 2, 4, 6, 8, 10], ticktext: ['0%', '2%', '4%', '6%', '8%', '10%'], range: [0, 10] },
+            shapes: [{
+                type: 'line',
+                y0: 4,
+                y1: 4,
+                xref: 'paper',
+                x0: 0,
+                x1: 1,
+                line: {color: 'red'}
+            }]
+        };
+        plotlyData.forEach(function(item, index) {
+            var date = new Date(item.x);
+            var label = '';
+<!--            var today = new Date();-->
+<!--            today.setHours(0, 0, 0, 0);-->
+            if (index < 7) {
+                label = date.toLocaleDateString() + ' Past';
+            } else if (index === 7) {
+                label = date.toLocaleDateString() + ' Current';
+            } else if (index === 8) {
+                label = date.toLocaleDateString() + ' Forecast';
+            }
+
+<!--            自定义的刻度文本,与刻度文本对应的日期值            -->
+            layoutH.xaxis.ticktext.push(label);
+            layoutH.xaxis.tickvals.push(item.x);
+        });
+        var config = { responsive: true, displayModeBar: false }
+        Plotly.newPlot('scatterPlotMagnetic', traces, layoutM, config);
+        Plotly.newPlot('scatterPlot', [traceH], layoutH, config);
+    </script>
+    <script>
+        // 添加事件监听器来处理选择变化
+        document.getElementById('meterSelect').addEventListener('change', function(event) {
+            event.preventDefault(); // 阻止表单默认提交行为
+            // 创建FormData对象并发送POST请求
+            var formData = new FormData(document.getElementById('meterForm')); // 创建FormData对象
+            var selectedMeter = this.value; // 获取选择的meter值
+            fetch('/healthiness_prediction/' + parseInt(selectedMeter), {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json()) // 解析JSON响应
+            .then(data => {
+                // 更新页面上的图表和img
+                 updateCharts(data.selected_meter, data.data_hp, data.magnetic_value,data.defects);
+
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function updateCharts(selected_meter, data_hp, magnetic_value, defects) {
+
+            // 更新 Location of Rope
+            document.getElementById('location').innerHTML = 'Location of Rope : ' + selected_meter + 'm';
+
+            // 更新 Magnetic Value 图表
+            var traces = [
+                {
+                    x: magnetic_value.map(row => row['meter']),
+                    y: magnetic_value.map(row => row['Sensor_1']),
+                    mode: 'lines',
+                    type: 'scatter',
+                    name: 'Sensor 1'
+                },
+                {
+                    x: magnetic_value.map(row => row['meter']),
+                    y: magnetic_value.map(row => row['Sensor_2']),
+                    mode: 'lines',
+                    type: 'scatter',
+                    name: 'Sensor 2'
+                },
+                {
+                    x: magnetic_value.map(row => row['meter']),
+                    y: magnetic_value.map(row => row['Sensor_3']),
+                    mode: 'lines',
+                    type: 'scatter',
+                    name: 'Sensor 3'
+                },
+                {
+                    x: magnetic_value.map(row => row['meter']),
+                    y: magnetic_value.map(row => row['Sensor_4']),
+                    mode: 'lines',
+                    type: 'scatter',
+                    name: 'Sensor 4'
+                },
+                {
+                    x: magnetic_value.map(row => row['meter']),
+                    y: magnetic_value.map(row => row['Sensor_5']),
+                    mode: 'lines',
+                    type: 'scatter',
+                    name: 'Sensor 5'
+                },
+                {
+                    x: magnetic_value.map(row => row['meter']),
+                    y: magnetic_value.map(row => row['Sensor_6']),
+                    mode: 'lines',
+                    type: 'scatter',
+                    name: 'Sensor 6'
+                }
+            ];
+
+            var layoutM = {
+                title: 'Magnetic Value',
+                xaxis: { title: 'Meter', range: [Math.floor(selected_meter) - 0.5, Math.ceil(selected_meter) + 0.5], dtick: 0.1, fixedrange: true, autorange:false },
+                yaxis: { title: 'Magnetic Value', range: [2000, 2700] },
+            };
+            Plotly.react('scatterPlotMagnetic', traces, layoutM);
+
+            //更新Healthiness prediction图表
+            var plotlyData = data_hp.map(function(item) {
+                return {
+                    x: convertDateFormat(item.date),
+                    y: item.Probability*100
+                };
+            });
+
+            var traceH = {
+                x: plotlyData.map(function(d) { return d.x; }),
+                y: plotlyData.map(function(d) { return d.y; }),
+                mode: 'markers',
+                type: 'scatter'
+            };
+
+            var layoutH = {
+<!--                title: 'Healthiness prediction for Meter ' + selected_meter,-->
+                xaxis: { title: 'Date', type: 'time', tickformat: '%d %b %y (%a)', fixedrange: true, ticktext: [], tickvals: [] },
+                yaxis: {  title: 'Loss of Metaliic Area(LMA)', tickvals: [0, 2, 4, 6, 8, 10], ticktext: ['0%', '2%', '4%', '6%', '8%', '10%'], range: [0, 10] },
+                shapes: [{
+                    type: 'line',
+                    y0: 4,
+                    y1: 4,
+                    xref: 'paper',
+                    x0: 0,
+                    x1: 1,
+                    line: { color: 'red' }
+                }]
+            };
+
+            plotlyData.forEach(function(item, index) {
+                var date = new Date(item.x);
+                var label = '';
+<!--                var today = new Date();-->
+<!--                today.setHours(0, 0, 0, 0);-->
+                if (index < 7) {
+                    label = date.toLocaleDateString() + ' Past';
+                } else if (index === 7) {
+                    label = date.toLocaleDateString() + ' Current';
+                } else if (index === 8) {
+                    label = date.toLocaleDateString() + ' Forecast';
+                }
+                layoutH.xaxis.ticktext.push(label);
+                layoutH.xaxis.tickvals.push(item.x);
+            });
+            Plotly.react('scatterPlot', [traceH], layoutH);
+            // 更新下拉框的selected_meter属性
+            var selectElement = document.getElementById('meterSelect');//meterForm
+            if (selectElement.options.length > 0) {
+                for (var i = 0; i < selectElement.options.length; i++) {
+                    if (selectElement.options[i].value === selected_meter) {
+                        selectElement.options[i].selected = true;
+                        break;
+                    }
+                }
+            }
+            currentMeterValue = selected_meter;
+        }
+    </script>
+    <script>
+        // 防抖函数
+        function debounce(func, delay) {
+            let timer;
+            return function() {
+                if (timer) {
+                    clearTimeout(timer);
+                }
+                timer = setTimeout(() => {
+                    func.apply(this, arguments);
+                    timer = null;
+                }, delay);
+            };
+        }
+        // 获取滑块元素和显示滑块值的元素
+        const slider = document.getElementById('day-slider');
+        const sliderValueElement = document.getElementById('slider-value');
+
+        // 创建一个防抖后的函数，用于处理发送POST请求及后续图表更新等操作
+        const debouncedFetchAndUpdate = debounce(function () {
+            const day = parseInt(slider.value);
+            sliderValueElement.textContent = day;
+            if (!currentMeterValue) {
+                console.log('currentMeterValue is not set properly, using default value or handling the situation');
+            }
+            // 发送POST请求到 /get_prediction 并传递 day and meter 参数
+            fetch('/get_prediction', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    day: day ,
+                    meter: currentMeterValue
+                })
+            })
+          .then(response => response.json())
+          .then(data => {
+
+                // 更新scatterPlot图表
+                const plotlyData = data.map(function (item) {
+                    return {
+                        x: convertDateFormat(item.date),
+                        y: item.Probability * 100
+                    };
+                });
+
+                var traceH = {
+                    x: plotlyData.map(function (d) { return d.x; }),
+                    y: plotlyData.map(function (d) { return d.y; }),
+                    mode: 'markers',
+                    type: 'scatter'
+                };
+
+                var layoutH = {
+                    // 标题等其他布局设置保持不变或按需调整
+                    xaxis: { title: 'Date', type: 'time', tickformat: '%d %b %y (%a)', fixedrange: true, ticktext: [], tickvals: [] },
+                    yaxis: { title: 'Loss of Metaliic Area(LMA)', tickvals: [0, 2, 4, 6, 8, 10], ticktext: ['0%', '2%', '4%', '6%', '8%', '10%'], range: [0, 10] },
+                    shapes: [{
+                        type: 'line',
+                        y0: 4,
+                        y1: 4,
+                        xref: 'paper',
+                        x0: 0,
+                        x1: 1,
+                        line: { color: 'red' }
+                    }]
+                };
+
+                plotlyData.forEach((item, index) => {
+                    var date = new Date(item.x);
+                    var label = '';
+                    if (index < 7) {
+                        label = date.toLocaleDateString() +'Past';
+                    } else if (index === 7 && (index+day) >= 8) {
+                        label = date.toLocaleDateString() +'Current';
+                    } else if (index >= 8 && index < (day+8)) {
+                        label = date.toLocaleDateString() +'Forecast';
+                    }
+                    layoutH.xaxis.ticktext.push(label);
+                    layoutH.xaxis.tickvals.push(item.x);
+                });
+
+                Plotly.react('scatterPlot', [traceH], layoutH);
+            })
+          .catch(error => console.error('Error:', error));
+        }, 1000); // 1000毫秒的延迟时间
+
+        // 修改事件监听器，调用防抖后的函数
+        slider.addEventListener('input', function () {
+            debouncedFetchAndUpdate();
+        });
+    </script>
+
+</body>
+</html>
+    <style>
+
+        /* 样式化侧边栏 */
+        .sidebar {
+            width: 90px; /* 调整侧边栏宽度 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            background-color: white;
+            overflow-x: hidden;
+            padding-top: 60px;
+        }
+        /* 菜单切换按钮样式 */
+        .menu-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001; /* 确保菜单切换按钮在其他内容之上 */
+            cursor: pointer;
+        }
+        /* 样式化侧边栏链接 */
+        .sidebar a {
+            display: block;
+            color: black;
+            text-align: center;
+            padding: 16px;
+            text-decoration: none;
+        }
+        .sidebar img {
+            width: 40px; /* 小图标的大小 */
+            height: auto;
+        }
+
+
+        /* 样式化主内容区 */
+        .content {
+            margin-left: 90px; /* 确保主内容区与侧边栏之间没有重叠 */
+            padding: 20px;
+            width: calc(100% - 90px); /* 设置内容区域宽度，减去侧边栏宽度 */
+            box-sizing: border-box; /* 确保padding和border包含在宽度计算内 */
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0; /* 移除默认的body边距 */
+            padding: 0; /* 移除默认的body填充 */
+        }
+
+
+        #slider-container {
+            text-align: center;
+            margin-top: 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 300px;
+            /* 明确滑块容器宽度，和滑块宽度一致方便布局 */
+            margin: 0 auto;
+            /* 水平居中 */
+        }
+
+       .slider-info {
+            display: flex;
+            align-items: center;
+        }
+
+       .slider-info span {
+            font-size: 14px;
+            color: #333;
+            margin-right: 5px;
+        }
+
+        #day-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            /* 占满容器宽度 */
+            height: 10px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition:.2s;
+            transition: opacity.2s;
+        }
+
+        #day-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+
+        #day-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+
+        #slider-value {
+            margin-right: 5px;
+        }
+
+       .slider-scale {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0;
+            box-sizing: border-box;
+            margin-top: 5px;
+            /* 适当调整刻度与滑块间距 */
+        }
+
+       .slider-scale div {
+            width: 20px;
+            /* 适当调整每个刻度数字容器宽度 */
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            line-height: 16px;
+            /* 垂直居中文字 */
+        }
+        #meterFormBlank {
+            margin-top: 30px; /* 调整此像素值来改变与上方元素的距离 */
+        }
+        #meterInput {
+            width: 22.5%; /* 调整输入框宽度 */
+        }
+
+    </style>

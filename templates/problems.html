@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!--    <link rel="stylesheet" href="/staticFiles/main.css" />-->
+    <title>Condition Monitoring System for Peak Tram</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+
+<body>
+    <div class="menu-toggle" onclick="toggleSidebar()">
+<!--        <img src="/static/Photos/menu_icon.jpg" alt="Menu Icon" style="width: 30px; height: 30px;">-->
+    </div>
+    <div class="sidebar">
+        <a href="/home"><img src="/static/Photos/home_icon.jpg" alt="Home Icon"></a>
+    </div>
+    <div class="content">
+        <h1>Condition Monitoring System for Peak Tram</h1>
+        <div id="chart0">
+            <div>
+                <img src="\static\photos\cover.jpg" style="width: 100%; height: auto;" alt=""/>
+            </div>
+        </div>
+        <div id="dateTime"></div>
+
+        <div class="flex-container">
+            <div id="location"></div>
+            <div id="category"></div>
+        </div>
+        <div id="scatterPlotMagnetic" style="max-width: 93%; height: auto; "></div>
+        <div id="scatterPlot" style="max-width: 93%; height: auto; "></div>
+        <div class="row">
+            <div>
+                <div id="location1"></div>
+                <img id="myImage" src="" alt="Image for meter {{ selected_meter }}" style="max-width: 100%; height: auto;display: block;">
+            </div>
+            <div>
+                <div id="Identification">Identification of Rope Issues :</div>
+                <form id="meterForm" method="POST">
+                    <select name="selected_meter" style="width:35%;">
+                        {% for issue in issues %}
+                            {% set defect_category = defects|selectattr('meter', 'equalto', issue['meter'])|list|first %}
+                            {% if defect_category %}
+                                {% if issue['meter'] == session.get('selected_meter') %}
+                                    <option value="{{ issue['meter'] }}" selected>{{ issue['meter'] }} - {{ defect_category['possible defect'] }}</option>
+                                {% else %}
+                                    <option value="{{ issue['meter'] }}">{{ issue['meter'] }} - {{ defect_category['possible defect'] }}</option>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Display the current date and time in Hong Kong
+        var now = new Date();
+        var options = { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', timeZone: 'Asia/Hong_Kong' };
+        document.getElementById('dateTime').innerHTML = new Intl.DateTimeFormat('en-US', options).format(now);
+
+        // Display Location of Rope
+        var ropeMeter={{selected_meter}}
+        document.getElementById('location').innerHTML = 'Location of Rope :    ' + ropeMeter+'m';
+        document.getElementById('location1').innerHTML = 'Location of Rope :    ' + ropeMeter+'m';
+
+        // Display Category
+        var defects={{defects|tojson}}
+        var category=defects.find(defect => defect.meter === ropeMeter)?.['possible defect']||'Not Found';
+        document.getElementById('category').innerHTML = 'Category of Issue :    '+ category;
+
+    </script>
+
+    <script>
+        // 添加事件监听器来处理选择变化
+        document.getElementById('meterForm').addEventListener('change', function(event) {
+            event.preventDefault(); // 阻止表单默认提交行为
+
+            var formData = new FormData(this); // 创建FormData对象
+            fetch('/problems/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json()) // 解析JSON响应
+            .then(data => {
+                // 更新页面上的图表和img
+                 updateCharts(data.selected_meter, data.historical_data, data.magnetic_value,data.defects);
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+
+        function displayMeterImage(ropeMeter) {
+            var date = "{{ date }}"; // 从后端传递的固定日期
+            var apiUrl = "/get_image?meter=" + encodeURIComponent(ropeMeter) + "&date=" + encodeURIComponent(date); // API 地址
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.blob(); // 将响应转为 Blob 对象
+                })
+                .then(imageBlob => {
+                    var imageUrl = URL.createObjectURL(imageBlob); // 创建 URL 对象
+                    var imgElement = document.getElementById('myImage');
+                    imgElement.alt = "Image for meter " + ropeMeter;
+                    imgElement.src = imageUrl; // 更新 img 元素的 src 属性
+                })
+        .catch(error => {
+            console.error('There was a problem with the fetch operation:', error);
+            // 可以设置一个默认图片,todo
+            document.getElementById('myImage').src = 'path/to/default_image.jpg';
+        });
+}
+
+        function updateCharts(selected_meter, historical_data, magnetic_value, defects) {
+
+            // 更新 Location of Rope
+            document.getElementById('location').innerHTML = 'Location of Rope : ' + selected_meter + 'm';
+            document.getElementById('location1').innerHTML = 'Location of Rope : ' + selected_meter + 'm';
+            //更新category
+            defects={{defects|tojson}}
+            var selected_meter_number = parseInt(selected_meter, 10);
+            var category=defects.find(defect => defect.meter === selected_meter_number)?.['possible defect']||'Not Found';
+            document.getElementById('category').innerHTML = 'Category of Issue :    '+ category;
+
+            // 更新 Magnetic Value 图表
+            magnetic_value={{magnetic_value|tojson}}
+            var traces = [
+                {
+                    x: magnetic_value.map(row => row['meter']),
+                    y: magnetic_value.map(row => row['Sensor_1']),
+                    mode: 'lines',
+                    type: 'scatter',
+                    name: 'Sensor 1'
+                },
+                {
+                    x: magnetic_value.map(row => row['meter']),
+                    y: magnetic_value.map(row => row['Sensor_2']),
+                    mode: 'lines',
+                    type: 'scatter',
+                    name: 'Sensor 2'
+                },
+                {
+                    x: magnetic_value.map(row => row['meter']),
+                    y: magnetic_value.map(row => row['Sensor_3']),
+                    mode: 'lines',
+                    type: 'scatter',
+                    name: 'Sensor 3'
+                },
+                {
+                    x: magnetic_value.map(row => row['meter']),
+                    y: magnetic_value.map(row => row['Sensor_4']),
+                    mode: 'lines',
+                    type: 'scatter',
+                    name: 'Sensor 4'
+                },
+                {
+                    x: magnetic_value.map(row => row['meter']),
+                    y: magnetic_value.map(row => row['Sensor_5']),
+                    mode: 'lines',
+                    type: 'scatter',
+                    name: 'Sensor 5'
+                },
+                {
+                    x: magnetic_value.map(row => row['meter']),
+                    y: magnetic_value.map(row => row['Sensor_6']),
+                    mode: 'lines',
+                    type: 'scatter',
+                    name: 'Sensor 6'
+                }
+            ];
+
+            var layoutM = {
+                xaxis: { title: 'Meter', range: [Math.floor(selected_meter) - 0.5, Math.ceil(selected_meter) + 0.5], dtick: 0.1, fixedrange: true, autorange:false },
+                yaxis: { title: 'Magnetic Value', range: [2000, 2700] },
+            };
+            Plotly.react('scatterPlotMagnetic', traces, layoutM);
+
+            var plotlyData = historical_data.map(function(item) {
+                return {
+                    x: convertDateFormat(item.date),
+                    y: item.Probability
+                };
+            });
+
+            var traceH = {
+                x: plotlyData.map(function(d) { return d.x; }),
+                y: plotlyData.map(function(d) { return d.y; }),
+                mode: 'markers',
+                type: 'scatter'
+            };
+
+            var layoutH = {
+<!--                title: 'Healthiness prediction for Meter ' + selected_meter,-->
+                xaxis: { title: 'Date', type: 'time', tickformat: '%d %b %y (%a)', fixedrange: true, ticktext: [], tickvals: [] },
+                yaxis: { title: 'Loss of Metaliic Area(LMA)', tickvals: [0, 0.02, 0.04, 0.06, 0.08, 0.1], ticktext: ['0%', '2%', '4%', '6%', '8%', '10%'], range: [0, 0.1] },
+                shapes: [{
+                    type: 'line',
+                    y0: 0.04,
+                    y1: 0.04,
+                    xref: 'paper',
+                    x0: 0,
+                    x1: 1,
+                    line: { color: 'red' }
+                }]
+            };
+
+            plotlyData.forEach(function(item, index) {
+                var date = new Date(item.x);
+                var label = '';
+
+                if (index === plotlyData.length - 1) {
+                    label = date.toLocaleDateString() + ' current'; // 最后一个是 current
+                } else {
+                    label = date.toLocaleDateString() + ' past'; // 其他的是 past
+                }
+
+                layoutH.xaxis.ticktext.push(label);
+                layoutH.xaxis.tickvals.push(item.x);
+
+
+            });
+            Plotly.react('scatterPlot', [traceH], layoutH);
+
+            //更新img
+            displayMeterImage(selected_meter);
+        }
+    </script>
+
+    <script>
+        //Display Magnetic Value
+        var magnetic_value ={{magnetic_value|tojson}}
+        var trace1={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_1']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 1'
+        };
+        var trace2={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_2']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 2'
+        };
+        var trace3={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_3']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 3'
+        };
+        var trace4={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_4']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 4'
+        };
+        var trace5={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_5']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 5'
+        };
+        var trace6={
+            x: magnetic_value.map(row => row['meter']),
+            y: magnetic_value.map(row => row['Sensor_6']),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sensor 6'
+        };
+        var traces=[trace1,trace2,trace3,trace4,trace5,trace6];
+        var layoutM = {
+            xaxis: { title: 'Meter', range: [ropeMeter-0.5,ropeMeter+0.5], dtick: 0.1,fixedrange: true },
+            yaxis: { title: 'Magnetic Value', range: [2100, 2700]},
+
+        };
+
+        //Display Health Score
+        var historical_data = {{ historical_data |tojson}};
+        function convertDateFormat(dateStr) {
+             var parts = dateStr.split('/');
+            // 确保月份和日期是两位数
+            var day = ('0' + parts[0]).slice(-2);
+            var month = ('0' + parts[1]).slice(-2);
+            var year = parts[2];
+            return year + '-' + month + '-' + day;
+        }
+
+        // 转换数据中的日期
+        var plotlyData = historical_data.map(function(item) {
+            return {
+                x: convertDateFormat(item.date),
+                y: item.Probability
+            };
+        });
+
+        var traceH = {
+            x: plotlyData.map(function(d) { return d.x; }),
+            y: plotlyData.map(function(d) { return d.y; }),
+            mode: 'markers',
+            type: 'scatter'
+        };
+
+        var layoutH = {
+<!--            title: 'Healthiness prediction for Meter ' + {{ selected_meter }},-->
+            xaxis: { title: 'Date' ,type: 'time',tickformat: '%d %b %y (%a)',fixedrange: true,ticktext: [],tickvals: []},
+            yaxis: { title: 'Loss of Metaliic Area(LMA)', tickvals: [0, 0.02, 0.04, 0.06, 0.08, 0.1], ticktext: ['0%', '2%', '4%', '6%', '8%', '10%'], range: [0, 0.1] },
+            shapes: [{
+                type: 'line',
+                y0: 0.04,
+                y1: 0.04,
+                xref: 'paper',
+                x0: 0,
+                x1: 1,
+                line: {color: 'red'}
+            }]
+        };
+        plotlyData.forEach(function(item, index) {
+            var date = new Date(item.x);
+            var label = '';
+
+            if (index < 7) {
+                label = date.toLocaleDateString() + ' Past';
+            } else if (index === 7) {
+                label = date.toLocaleDateString() + ' Current';
+            }
+<!--            自定义的刻度文本,与刻度文本对应的日期值            -->
+            layoutH.xaxis.ticktext.push(label);
+            layoutH.xaxis.tickvals.push(item.x);
+        });
+
+        var config = { responsive: true, displayModeBar: false }
+        Plotly.newPlot('scatterPlotMagnetic', traces, layoutM, config);
+        Plotly.newPlot('scatterPlot', [traceH], layoutH, config);
+        document.addEventListener('DOMContentLoaded', function() {
+            var selected_meter = {{ selected_meter }};
+            displayMeterImage(selected_meter);
+        });
+    </script>
+
+</body>
+</html>
+<style>
+    .flex-container {
+        display: flex;
+    }
+    .flex-container > div + div {
+        margin-left: 100px;
+    }
+    .row {
+        display: flex;
+    }
+    .row > div:first-child {
+        display: flex;
+        width:60%;
+        flex-direction: column;
+    }
+    .location1{
+        margin-bottom: 30px;
+    }
+    .row > div:last-child {
+        display: flex;
+        flex-direction: column;
+        width:40%;
+        text-align: center;
+        margin: 0 auto;
+        margin-top:40px;
+    }
+
+        /* 样式化侧边栏 */
+        .sidebar {
+            width: 80px; /* 调整侧边栏宽度 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            background-color: white;
+            overflow-x: hidden;
+            padding-top: 60px;
+        }
+        /* 菜单切换按钮样式 */
+        .menu-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001; /* 确保菜单切换按钮在其他内容之上 */
+            cursor: pointer;
+        }
+        /* 样式化侧边栏链接 */
+        .sidebar a {
+            display: block;
+            color: black;
+            text-align: center;
+            padding: 16px;
+            text-decoration: none;
+        }
+        .sidebar img {
+            width: 40px; /* 小图标的大小 */
+            height: auto;
+        }
+
+
+        /* 样式化主内容区 */
+        .content {
+            margin-left: 80px; /* 确保主内容区与侧边栏之间没有重叠 */
+            padding: 20px;
+            width: calc(100% - 80px); /* 设置内容区域宽度，减去侧边栏宽度 */
+            box-sizing: border-box; /* 确保padding和border包含在宽度计算内 */
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0; /* 移除默认的body边距 */
+            padding: 0; /* 移除默认的body填充 */
+        }
+
+</style>

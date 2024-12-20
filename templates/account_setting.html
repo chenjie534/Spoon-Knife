@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Account Setting</title>
+</head>
+<body>
+    <div class="menu-toggle" onclick="toggleSidebar()">
+    </div>
+    <div class="sidebar">
+        <a href="/home"><img src="/static/Photos/home_icon.jpg" alt="Home Icon"></a>
+    </div>
+    <div class="content">
+        <h1>帳戶設定</h1>
+        <div class="account-setting">
+            <div class="search-bar">
+                <label for="account-name">帳戶名稱：</label>
+                <input type="text" id="account-name" placeholder="請輸入內容">
+                <button class="search-btn">查詢</button>
+                <button class="cancel-btn">取消</button>
+                <button class="add-btn">新增</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>帳戶名稱</th>
+                        <th>權限等級</th>
+                        <th>更新日期</th>
+                        <th>操作人員</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+               <tbody>
+                    {% for item in data %}
+                    <tr>
+                        <td>{{ item.account_name }}</td>
+                        <td>{{ item.permission_level }}</td>
+                        <td>{{ item.update_date }}</td>
+                        <td>{{ item.operator }}</td>
+                        <td>
+                            <a href="#" class="password-link">密碼</a>
+                            <a href="#" class="edit-link">編輯</a>
+                            <a href="#" class="delete-link">刪除</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+
+
+
+
+    </script>
+</body>
+</html>
+<style>
+     /* 样式化侧边栏 */
+        .sidebar {
+            width: 80px; /* 调整侧边栏宽度 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            background-color: white;
+            overflow-x: hidden;
+            padding-top: 60px;
+        }
+
+        /* 样式化侧边栏链接 */
+        .sidebar a {
+            display: block;
+            color: black;
+            text-align: center;
+            padding: 16px;
+            text-decoration: none;
+        }
+        .sidebar img {
+            width: 40px; /* 小图标的大小 */
+            height: auto;
+        }
+
+
+        /* 样式化主内容区 */
+        .content {
+            margin-left: 80px;
+            padding: 20px;
+            width: calc(100% - 80px);
+            box-sizing: border-box;
+            overflow: auto; /* 添加滚动条，如果内容超出 */
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0; /* 移除默认的body边距 */
+            padding: 0; /* 移除默认的body填充 */
+        }
+    /* 账户设定页面的标题样式 */
+    .content h1 {
+        text-align: left;
+        margin-left: 20px;
+    }
+
+    /* 搜索栏样式 */
+    .account-setting.search-bar {
+        display: flex;
+        align-items: center;
+        margin: 20px;
+    }
+    .account-setting.search-bar label {
+        margin-right: 10px;
+    }
+    .account-setting.search-bar input {
+        flex: 1;
+        margin-right: 10px;
+    }
+    .account-setting.search-bar button {
+        padding: 5px 10px;
+        margin-right: 10px;
+    }
+    .search-btn {
+        background-color: green;
+        color: white;
+        border: none;
+    }
+    .cancel-btn {
+        background-color: green;
+        color: white;
+        border: none;
+    }
+    .add-btn {
+        background-color: green;
+        color: white;
+        border: none;
+        margr-left:80%;
+    }
+
+    /* 表格样式 */
+    .account - setting table {
+        width: 100%;
+        border - collapse: collapse;
+        max - height: 300px; /* 设置最大高度，可根据需要调整 */
+        overflow - y: auto; /* 添加垂直滚动条 */
+    }
+    .account-setting th,.account-setting td {
+        border: 1px solid #ccc;
+        padding: 10px;
+        text-align: center;
+    }
+    .account-setting th {
+        background-color: #f2f2f2;
+    }
+    .account-setting.password-link,.account-setting.edit-link,.account-setting.delete-link {
+        margin-right: 10px;
+        color: blue;
+        text-decoration: underline;
+    }
+</style>

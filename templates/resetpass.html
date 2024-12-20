@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reset Password</title>
+</head>
+<body>
+    <div class="blob"></div>
+    <div class="wrapper">
+         <form action="/resetpass" method="post">
+             <h2>Reset Password</h2>
+            <div class="input-box">
+                 <span class="icon"><ion-icon name="lock-closed-outline"></ion-icon></span>
+                 <input type="password"  id="password" name="password" placeholder="password" required>
+             </div>
+             <div class="input-box">
+                 <span class="icon"><ion-icon name="lock-closed-outline"></ion-icon></span>
+                 <input type="password-repeat" id="confirm_password" name="confirm_password" placeholder="confirm password" required>
+             </div>
+             <button type="submit">Reset Immediately</button>
+             <div class="login-page">
+                <p>Password retrieved? <a href="/" class="login-link">login in</a></p>
+            </div>
+         </form>
+    </div>
+
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 密码验证逻辑
+            const passwordInput = document.querySelector('input[name="password"]');
+            const confirmPasswordInput = document.querySelector('input[name="confirm_password"]');
+            const passwordStatus = document.createElement('div'); // 创建用于显示密码验证结果的元素
+            const confirmPasswordStatus = document.createElement('div'); // 创建用于显示确认密码验证结果的元素
+            passwordStatus.className = 'status-icon';
+            confirmPasswordStatus.className = 'status-icon';
+            // 将状态元素添加到相应的位置
+            passwordInput.parentNode.appendChild(passwordStatus);
+            confirmPasswordInput.parentNode.appendChild(confirmPasswordStatus);
+            function validatePassword() {
+                const passwordValue = passwordInput.value;
+                const confirmPasswordValue = confirmPasswordInput.value;
+                const passwordRegex = /^[a-zA-Z0-9_]{6,10}$/;
+                // 验证密码长度
+                if (!passwordRegex.test(passwordValue)) {
+                    passwordInput.setCustomValidity('6-10 characters in length');
+                } else {
+                    passwordInput.setCustomValidity('');
+                }
+                // 验证密码一致性
+                if (passwordValue !== confirmPasswordValue) {
+                    confirmPasswordInput.setCustomValidity('please keep the password consistent');
+                } else {
+                    confirmPasswordInput.setCustomValidity('');
+                }
+            }
+            // 为密码输入框添加事件监听器
+            if (passwordInput && confirmPasswordInput) {
+                passwordInput.addEventListener('input', validatePassword);
+                confirmPasswordInput.addEventListener('input', validatePassword);
+            }
+
+            // 在表单提交时进行验证
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    validatePassword();
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+    <style>
+        /* 从代码1中复制的样式 */
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+        .wrapper {
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            background-color: white;
+            width: 300px; /* 可根据需要调整宽度 */
+            text-align: center;
+        }
+        .input-box {
+            margin-bottom: 10px;
+            position: relative;
+            width: 100%;
+        }
+        .input-box input {
+            width: calc(100% - 60px);
+            padding: 10px 20px 10px 50px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        button[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        .login-page {
+            margin-top: 10px;
+        }
+        .login-link {
+            color: #007bff;
+            text-decoration: underline;
+        }
+        .status-icon {
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        .green {
+            color: green;
+        }
+        .red {
+            color: red;
+        }
+    </style>

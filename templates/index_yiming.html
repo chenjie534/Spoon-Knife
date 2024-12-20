@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/staticFiles/main.css" />
+    <title>Condition Monitoring System for Peak Tram</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        button{
+            background-color:#f66f6a;
+            color:white;
+            width: 50px;
+            height: 100px;
+            border:0;
+            font-size: 16px;
+            box-sizing: content-box;
+            border-radius: 5px;
+            }
+        imgx {
+                    width: 600px;
+                    height: 300px;
+                }
+        .slider {
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+            position: relative;
+        }
+        .slider img {
+            width: 100%;
+            height: 400px;
+            display: none;
+        }
+        .slider img.active {
+            display: block;
+        }
+    </style>
+
+</head>
+
+
+<body>
+
+    <img src="\static\photos\peak-tram_cover.jpg" width="2000" height="594" alt=""/>
+
+    <h1>Condition Monitoring System for Peak Tram</h1>
+
+
+
+    <h2>Inspection by Computer Vision </h2>
+
+	<p>&nbsp;</p>
+	<p>&nbsp;</p>
+
+<p> <span style="font-size: 2rem"> Length of Inspection:</span> <span style="font-size: 2rem;background-color: green;color:white" id="counter">000</span></p>
+    <p> <span style="font-size: 1.8rem"> Number of Failure Points: </span> <span style="font-size: 2rem;background-color: green;color:white">{{ cv_inspection.failures }} </span></p>
+
+    <canvas id="myCanvas"></canvas>
+    <script>
+       // 初始化计数器
+        let count = 1352;
+
+        // 更新计数器并显示在页面上
+        function updateCounter() {
+            count = count + 13;
+            if (count > 9999) {
+                count = 1000; // 重置计数器
+            }
+            document.getElementById("counter").textContent = count.toString().padStart(3, "0");
+        }
+
+        // 每秒钟更新一次计数器
+        setInterval(updateCounter, 1000);
+    </script>
+
+    <button onclick="changeImage(-1)" >&lt;</button>
+    <img id="image" src="{{ ima[0] }}" alt="Image" width="800" height="400">
+    <button onclick="changeImage(1)">&gt;</button>
+
+    <script>
+        let currentIndex = 0;
+        const images = {{ ima|tojson }};
+
+        function changeImage(direction) {
+            currentIndex += direction;
+            if (currentIndex < 0) {
+                currentIndex = images.length - 1;
+            } else if (currentIndex >= images.length) {
+                currentIndex = 0;
+            }
+            document.getElementById('image').src = images[currentIndex];
+        }
+    </script>
+
+<!--    {% for image in ima %}-->
+<!--    <img src="{{ url_for('static', filename='images/' + image) }}" alt="{{ image }}" class="{% if loop.first %}active{% endif %}">-->
+<!--    {% endfor %}-->
+
+<!--    <script>-->
+<!--        let currentImageIndex = 0;-->
+<!--        const images = {{ ima }}-->
+
+<!--        function showImage(index) {-->
+<!--            const imageElement = document.getElementById('image');-->
+<!--            imageElement.src = images[index];-->
+<!--        }-->
+
+<!--        function prevImage() {-->
+<!--            if (currentImageIndex > 0) {-->
+<!--                currentImageIndex&#45;&#45;;-->
+<!--            } else {-->
+<!--                currentImageIndex = images.length - 1;-->
+<!--            }-->
+<!--            showImage(currentImageIndex);-->
+<!--        }-->
+
+<!--        function nextImage() {-->
+<!--            if (currentImageIndex < images.length - 1) {-->
+<!--                currentImageIndex++;-->
+<!--            } else {-->
+<!--                currentImageIndex = 0;-->
+<!--            }-->
+<!--            showImage(currentImageIndex);-->
+<!--        }-->
+<!--    </script>-->
+
+<!--    <div class="container">-->
+<!--        <button onclick="prevImage()" >&lt;</button>-->
+<!--        <img id="image" src="../static/images/Predict.jpg" class="img" alt="图片展示">-->
+<!--        <button onclick="nextImage()">&gt;</button>-->
+<!--    </div>-->
+
+
+
+    <h1>&nbsp;</h1>
+	<h1>&nbsp;</h1>
+
+
+    <h1>Magnetic Sensor Inspection</h1>
+
+     <!-- Data Visualization in Plotly -->
+
+     <div id="chart1"></div>
+     <script>
+         var fig_plot = {{ plot | safe }};
+         Plotly.newPlot('chart1', fig_plot);
+     </script>
+
+
+    <!-- Kmeans in Plotly -->
+    <div id="chart2"></div>
+        <script>
+            var fig_kmeans = {{ plot_kmeans | safe }};
+            Plotly.newPlot('chart2', fig_kmeans);
+        </script>
+
+</body>
+</html>
+

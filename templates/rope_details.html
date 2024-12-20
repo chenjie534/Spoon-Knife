@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rope Details</title>
+</head>
+<body>
+    <div class="sidebar">
+        <a href="/home"><img src="/static/Photos/home_icon.jpg" alt="Home Icon"></a>
+    </div>
+    <div class="content">
+        <h1>Rope Details</h1>
+            <div id="dataDisplay">
+                <!-- Data items will be inserted here -->
+            </div>
+     </div>
+
+    <script>
+        var data={{data|tojson}}
+        function displayData(data) {
+            var dataDisplay = document.getElementById('dataDisplay');
+            for (var key in data) {
+                var value = data[key];
+                var item = document.createElement('div');
+                item.className = 'data-item';
+                item.innerHTML = '<label>' + key.replace(/([A-Z])/g, ' $1').replace(/^./, function(str){ return str.toUpperCase(); }) + ':</label> <span>' + value + '</span>';
+                dataDisplay.appendChild(item);
+            }
+        }
+        displayData(data);
+    </script>
+</body>
+</html>
+<style>
+    .flex-container {
+        display: flex;
+    }
+    .flex-container > div + div {
+        margin-left: 100px;
+    }
+     /* 样式化侧边栏 */
+     .sidebar {
+            width: 80px; /* 调整侧边栏宽度 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            background-color: white;
+            overflow-x: hidden;
+            padding-top: 60px;
+     }
+     /* 样式化侧边栏链接 */
+     .sidebar a {
+            display: block;
+            color: black;
+            text-align: center;
+            padding: 16px;
+            text-decoration: none;
+     }
+     .sidebar img {
+            width: 40px; /* 小图标的大小 */
+            height: auto;
+     }
+    .content {
+            margin-left: 100px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            margin-right: 20px;
+            flex-grow: 1;
+    }
+    .data-item {
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+    }
+    .data-item label {
+            font-weight: bold;
+            display: inline-block;
+            width: 150px;
+            margin-bottom: 5px;
+    }
+    .data-item span {
+            color: #555;
+    }
+</style>

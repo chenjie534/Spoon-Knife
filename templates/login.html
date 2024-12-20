@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+</head>
+<body>
+
+   <div class="blob"></div>
+   <div class="wrapper" >
+        <form action="/" method="post">
+            <h2>Login</h2>
+            <div class="input-box">
+                <span class="icon"><ion-icon name="mail-open-outline"></ion-icon></span>
+                <input type="text" name="username-or-email" placeholder="Username" required>
+            </div>
+            <div class="input-box">
+                <span class="icon"><ion-icon name="lock-closed-outline"></ion-icon></span>
+                <input type="password" name="password" placeholder="Password" required>
+            </div>
+            <div class="remeber-forgot">
+                <label>
+                    <input type="checkbox" name="remember_me"> Remember
+                    <a href="/forgotpass" class="forgot-link">Forgot password?</a>
+                </label>
+            </div>
+            <button type="submit" >Login</button>
+             <div class="register-page">
+                <p>Don't have an account yet? <a href="/signup" class="register-link">Register</a></p>
+            </div>
+        </form>
+   </div>
+   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script>
+       // 解析cookie并填充表单
+       function fillFormFromCookie() {
+           const cookieValue = document.cookie
+               .split('; ')
+               .find(row => row.startsWith('remember_me='))
+               ?.split('=')[1];
+           if (cookieValue) {
+               const [username, password] = decodeURIComponent(cookieValue).split('|');
+               document.querySelector('input[name="username-or-email"]').value = username;
+               document.querySelector('input[name="password"]').value = password;
+               document.querySelector('input[name="remember_me"]').checked = true;
+           }
+       }
+
+       // 监听表单提交事件
+       document.querySelector('form').addEventListener('submit', function(event) {
+           event.preventDefault(); // 阻止表单的默认提交行为
+           // 获取用户名和密码
+           var username = document.querySelector('input[name="username-or-email"]').value;
+           var password = document.querySelector('input[name="password"]').value;
+           // 获取记住密码复选框的状态
+           var rememberMe = document.querySelector('input[name="remember_me"]').checked;
+
+           // 创建一个加密的 cookie 来存储用户名和密码
+           if (rememberMe) {
+               var encryptedCookie = encrypt(username + '|' + password);
+               document.cookie = 'remember_me=' + encryptedCookie + '; expires=Thu, 01 Jan 2025 00:00:00 UTC; path=/';
+           } else {
+               document.cookie = 'remember_me=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+           }
+
+           // 提交表单
+           this.submit();
+       });
+
+       // 加密函数（这里只是一个示例，你需要一个安全的加密方法）
+       function encrypt(text) {
+           // 这里可以添加你的加密逻辑
+           return text;
+       }
+
+       // 页面加载时填充表单
+       window.onload = fillFormFromCookie;
+   </script>
+</body>
+</html>
+
+<style>
+    body, html {
+         height: 100%;
+         margin: 0;
+         display: flex;
+         justify-content: center;
+         align-items: center;
+         background-color: #f0f0f0;
+    }
+    .wrapper {
+         border: 1px solid #ccc;
+         padding: 20px;
+         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+         border-radius: 8px;
+         background-color: white;
+         width: 300px;
+         display: flex;
+         flex-direction: column;
+         align-items: center;
+    }
+    form {
+        width: 80%;
+         text-align: center;
+    }
+    .input-box {
+         margin-bottom: 10px;
+         position: relative;
+         width:100%;
+    }
+    .input-box input {
+         width: calc(100% - 40px);
+         padding: 10px 20px 10px 40px;
+         border: 1px solid #ccc;
+         border-radius: 4px;
+    }
+    .icon {
+         position: absolute;
+         left: 10px;
+         top: 50%;
+         transform: translateY(-50%);
+    }
+    button {
+          width: 110%;
+          padding: 10px;
+          margin-top: 10px;
+          border: none;
+          background-color: #007bff;
+          color: white;
+          border-radius: 4px;
+          cursor: pointer;
+    }
+    button:hover {
+          background-color: #0056b3;
+    }
+    .register-page {
+          margin-top: 10px;
+    }
+    .register-link{
+          text-decoration: none;
+          color: #007bff;
+    }
+    .remeber-forgot {
+          width: 100%; /* Full width */
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 5px;
+    }
+    .remeber-forgot label {
+          flex-grow: 1; /* Allow label to grow and push forgot link to the right */
+    }
+    .forgot-link {
+          text-decoration: none;
+          color: #007bff;
+          margin-left: 10px; /* Adjust spacing between checkbox and forgot link */
+    }
+</style>

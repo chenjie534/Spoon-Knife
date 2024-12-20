@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forgot Password Page</title>
+</head>
+<body>
+    <div class="blob"></div>
+    <div class="wrapper">
+        <form action="/forgotpass" method="post">
+             <h2>Reset Password</h2>
+             <div class="input-box">
+                 <span class="icon"><ion-icon name="mail-open-outline"></ion-icon></span>
+                 <input type="email" id="email" name="email" placeholder="email" required>
+             </div>
+             <div class="input-box">
+                <span class="icon"><ion-icon name="lock-closed-outline"></ion-icon></span>
+                <input type="text" name="verification_code" id="verification_code" placeholder="verification code" required>
+                <button type="button" id="send-code-btn" class="send-code-btn">Send</button>
+            </div>
+            <div id="codeStatus" style="display: inline-block; margin-top: 10px;"></div> <!-- 添加用于显示验证结果的元素 -->
+
+            <button type="submit">Start Resetting</button>
+            <div class="login-page">
+                <p>Password retrieved? <a href="/" class="login-link">login in</a></p>
+            </div>
+        </form>
+    </div>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 邮箱验证逻辑
+            let isEmailValid = false; // 跟踪邮箱输入是否有效
+            let isEmailVerified = false; // 跟踪邮箱是否已经验证成功
+            const emailInput = document.querySelector('input[name="email"]');
+            const sendCodeBtn = document.getElementById('send-code-btn');
+            function validateEmail() {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                isEmailValid = emailRegex.test(emailInput.value);
+                sendCodeBtn.disabled = !isEmailValid; // 根据邮箱输入的有效性启用或禁用按钮
+            }
+            // 为邮箱输入框添加事件监听器
+            if (emailInput) {
+                emailInput.addEventListener('input', validateEmail);
+            }
+
+            //验证码
+            let coldTime = 60;
+            let intervalId;
+            let sentCode = ""; // 发送到邮箱的验证码
+            let isCodeSent = false; // 标记是否已发送验证码
+            document.getElementById('verification_code').placeholder = 'verification code';
+            document.getElementById('send-code-btn').addEventListener('click', function() {
+                if (intervalId) {
+                    clearInterval(intervalId);
+                }
+                // 重置验证码输入框和发送按钮的状态
+                document.getElementById('verification_code').value = ''; // 清空验证码输入框
+                document.getElementById('verification_code').placeholder = 'verification code';
+                document.getElementById('codeStatus').innerHTML = ''; // 清空验证状态信息
+                this.disabled = false; // 启用发送验证码按钮
+                isCodeSent = false; // 重置验证码发送状态
+
+                <!--后端发送验证码到邮箱并将发送的验证码传给前端并赋值给sentCode-->
+                const email = document.querySelector('input[name="email"]').value;
+                data= requests.get('http://localhost:5000/signup/validate', params={'email': email})
+                sentCode =  data.code;
+
+                isCodeSent = true;
+                coldTime = 60; // 重置倒计时
+                intervalId = setInterval(function() {
+                    coldTime--;
+                    document.getElementById('verification_code').placeholder = 'wait ' + coldTime + ' seconds';
+                    if (coldTime <= 0) {
+                        clearInterval(intervalId);
+                        document.getElementById('verification_code').placeholder = 'verification code';
+                    }
+                }, 1000);
+            });
+            // 校验验证码
+            function validateCode() {
+                let inputCode = document.getElementById('verification_code').value;
+                if (inputCode.length === 6 && isCodeSent) {
+                    if (inputCode === sentCode) {
+                         // 显示验证通过的图标和文字
+                        document.getElementById('codeStatus').innerHTML = '<span class="status-icon green">✓</span> verification successful';
+                        document.getElementById('send-code-btn').disabled = true;
+                        document.getElementById('verification_code').disabled = true;
+                        emailInput.readOnly = true; // 设置邮箱输入框为只读
+                        isEmailVerified = true; // 标记邮箱已经验证成功
+                    } else {
+                        // 显示验证失败的图标和文字
+                        document.getElementById('codeStatus').innerHTML = '<span class="status-icon red">✗</span> verification failed';
+                    }
+                }
+            }
+            // 如果邮箱已经验证成功，阻止邮箱输入框的内容更改
+            emailInput.addEventListener('input', function() {
+                if (isEmailVerified) {
+                    emailInput.value = emailInput.defaultValue; // 恢复邮箱输入框的原始值
+                }
+            });
+            // 为验证码输入框添加事件监听器，以便在输入后进行验证
+            document.getElementById('verification_code').addEventListener('input', validateCode);
+        });
+    </script>
+
+</body>
+</html>
+    <style>
+        /* 以下是代码1中的CSS样式 */
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+        .wrapper {
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            background-color: white;
+            width: 300px; /* 可根据需要调整宽度 */
+            text-align: center;
+        }
+        .input-box {
+            margin-bottom: 10px;
+            position: relative;
+            width: 100%;
+        }
+        .input-box input {
+            width: calc(100% - 60px);
+            padding: 10px 20px 10px 50px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .send-code-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .send-code-btn:hover {
+            background-color: #0056b3;
+        }
+        button[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        .login-page {
+            margin-top: 10px;
+        }
+        .login-link {
+            color: #007bff;
+            text-decoration: underline;
+        }
+        .status-icon {
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        .green {
+            color: green;
+        }
+        .red {
+            color: red;
+        }
+        /* 移除.blob类，因为它在代码1中没有对应的样式 */
+    </style>
